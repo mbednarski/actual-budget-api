@@ -1,0 +1,36 @@
+{
+  "name": "actual-budget-api-wrapper",
+  "version": "1.0.0",
+  "description": "HTTP wrapper for Actual Budget API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop actual-budget-wrapper",
+    "pm2:restart": "pm2 restart actual-budget-wrapper",
+    "pm2:logs": "pm2 logs actual-budget-wrapper"
+  },
+  "dependencies": {
+    "@actual-app/api": "25.7.1",
+    "fastify": "^4.0.0",
+    "dotenv": "^16.0.0",
+    "@fastify/swagger": "^8.0.0",
+    "@fastify/swagger-ui": "^1.0.0"
+  },
+  "devDependencies": {
+    "pm2": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "actual-budget",
+    "api",
+    "wrapper",
+    "http",
+    "rest"
+  ],
+  "author": "",
+  "license": "MIT"
+}
