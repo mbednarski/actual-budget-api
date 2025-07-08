@@ -1,7 +1,11 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Actual Budget API HTTP Wrapper
 
 ## Project Overview
-HTTP wrapper for Actual Budget API that exposes three core methods via REST endpoints on localhost.
+HTTP wrapper for Actual Budget API that exposes account, category, and category group data via REST endpoints on localhost.
 
 ## Tech Stack
 - **Runtime**: Node.js
@@ -10,10 +14,12 @@ HTTP wrapper for Actual Budget API that exposes three core methods via REST endp
 - **API Client**: @actual-app/api (version 25.7.1)
 - **Documentation**: OpenAPI/Swagger (auto-generated)
 
-## Exposed Methods
+## API Endpoints
 - `GET /api/accounts` - Get all accounts
 - `GET /api/categories` - Get all categories  
 - `GET /api/category-groups` - Get all category groups
+- `GET /api/categories-with-notes` - Get categories with their notes
+- `GET /api/categories-with-notes-and-groups` - Get categories with notes and parent group info
 - `GET /health` - Health check endpoint
 - `GET /docs` - Interactive Swagger UI documentation
 - `GET /docs/json` - Raw OpenAPI JSON specification
@@ -23,38 +29,65 @@ HTTP wrapper for Actual Budget API that exposes three core methods via REST endp
 # Install dependencies
 npm install
 
-# Development server
+# Development server (with watch mode)
 npm run dev
 
 # Production server
 npm start
 
 # Process management
-pm2 start ecosystem.config.js
-pm2 stop actual-budget-wrapper
-pm2 restart actual-budget-wrapper
-pm2 logs actual-budget-wrapper
+npm run pm2:start     # or pm2 start ecosystem.config.js
+npm run pm2:stop      # or pm2 stop actual-budget-wrapper
+npm run pm2:restart   # or pm2 restart actual-budget-wrapper
+npm run pm2:logs      # or pm2 logs actual-budget-wrapper
 ```
 
 ## Configuration
-Environment variables in `.env`:
-- `ACTUAL_SERVER_URL` - Actual Budget server URL
-- `ACTUAL_PASSWORD` - Server password
-- `ACTUAL_BUDGET_ID` - Budget sync ID
-- `ACTUAL_DATA_DIR` - Data cache directory
+Environment variables (create `.env` file):
+- `ACTUAL_SERVER_URL` - Actual Budget server URL (default: http://localhost:5006)
+- `ACTUAL_PASSWORD` - Server password (required)
+- `ACTUAL_BUDGET_ID` - Budget sync ID (required)
+- `ACTUAL_DATA_DIR` - Data cache directory (default: ./data)
 - `HTTP_PORT` - HTTP server port (default: 3000)
 - `HTTP_HOST` - HTTP server host (default: 127.0.0.1)
 
-## Project Structure
-```
-src/
-├── server.js          # Fastify HTTP server with OpenAPI config
-├── actual-client.js   # Actual Budget API wrapper
-├── config.js          # Configuration management
-├── schemas.js         # OpenAPI schemas for data models
-└── routes/
-    └── api.js         # API route handlers with OpenAPI schemas
-```
+## Architecture Overview
+
+### Core Components
+1. **ActualBudgetClient** (`src/actual-client.js`): Singleton wrapper around @actual-app/api
+   - Handles connection initialization and state management
+   - Implements lazy initialization with connection pooling
+   - Provides all data access methods (accounts, categories, category groups)
+   - Includes advanced query methods for categories with notes using client-side joins
+
+2. **Fastify Server** (`src/server.js`): HTTP server with OpenAPI integration
+   - Auto-registers Swagger UI at `/docs`
+   - Implements graceful shutdown handling
+   - Centralizes error handling and logging
+
+3. **API Routes** (`src/routes/api.js`): Route handlers with full OpenAPI schemas
+   - All endpoints return consistent `{success: boolean, data: any}` format
+   - Query parameters for filtering (includeHidden, incomeOnly, expenseOnly)
+   - Complete OpenAPI documentation for auto-generated docs
+
+4. **Schema Definitions** (`src/schemas.js`): OpenAPI/JSON schemas for all data models
+   - Provides type safety and validation
+   - Enables auto-generated documentation
+   - Supports complex nested objects (categories with groups)
+
+### Data Flow
+1. Client request → Fastify routes → ActualBudgetClient → @actual-app/api → Actual Budget server
+2. ActualBudgetClient uses AQL (Actual Query Language) for complex queries
+3. Client-side joins performed for categories-with-notes endpoints using lookup maps
+4. Responses normalized (booleans, consistent field names)
+
+### Query Architecture
+- Simple endpoints (accounts, categories, category-groups) use direct API calls
+- Complex endpoints (categories-with-notes) use parallel AQL queries with client-side joins:
+  - Categories query with filters
+  - Notes query for all notes
+  - Category groups query (for full endpoint)
+  - Efficient lookup maps for O(1) joins
 
 ## Testing
 ```bash
@@ -62,22 +95,13 @@ src/
 curl http://localhost:3000/api/accounts
 curl http://localhost:3000/api/categories
 curl http://localhost:3000/api/category-groups
+curl http://localhost:3000/api/categories-with-notes
+curl http://localhost:3000/api/categories-with-notes-and-groups
 curl http://localhost:3000/health
 
 # View interactive documentation
 open http://localhost:3000/docs
 ```
-
-## Deployment
-1. Configure environment variables
-2. Install dependencies: `npm install`
-3. Start with PM2: `pm2 start ecosystem.config.js`
-4. Monitor: `pm2 monit`
-
-## Resource Usage
-- Memory: ~50MB
-- CPU: Minimal (I/O bound)
-- Storage: ~100MB for dependencies + cache
 
 ## Documentation Strategy
 **IMPORTANT**: This project implements OpenAPI/Swagger for automatic documentation generation. All endpoints MUST have OpenAPI schemas defined in their route handlers. This ensures:

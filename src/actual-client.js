@@ -163,6 +163,103 @@ class ActualBudgetClient {
     }
   }
 
+  async getCategoriesWithNotesAndGroups(options = {}) {
+    await this.ensureInitialized();
+    
+    const {
+      includeHidden = false,
+      incomeOnly = false,
+      expenseOnly = false
+    } = options;
+    
+    try {
+      // Build category query with filters
+      let categoryQuery = q('categories')
+        .select([
+          'id',
+          'name',
+          'is_income',
+          'hidden',
+          'group',
+          'sort_order',
+          'goal_def'
+        ])
+        .filter({ tombstone: false });
+      
+      // Apply optional filters
+      if (!includeHidden) {
+        categoryQuery = categoryQuery.filter({ hidden: false });
+      }
+      
+      if (incomeOnly) {
+        categoryQuery = categoryQuery.filter({ is_income: true });
+      } else if (expenseOnly) {
+        categoryQuery = categoryQuery.filter({ is_income: false });
+      }
+      
+      categoryQuery = categoryQuery.orderBy('sort_order');
+      
+      // Notes query
+      const notesQuery = q('notes').select(['id', 'note']);
+      
+      // Category groups query
+      const categoryGroupsQuery = q('category_groups')
+        .select([
+          'id',
+          'name',
+          'is_income',
+          'sort_order',
+          'hidden'
+        ])
+        .filter({ tombstone: false });
+      
+      // Execute all queries in parallel
+      const [categoriesResult, notesResult, categoryGroupsResult] = await Promise.all([
+        api.aqlQuery(categoryQuery),
+        api.aqlQuery(notesQuery),
+        api.aqlQuery(categoryGroupsQuery)
+      ]);
+      
+      // Validate results
+      if (!categoriesResult?.data || !notesResult?.data || !categoryGroupsResult?.data) {
+        throw new Error('Invalid query results received');
+      }
+      
+      // Create lookup maps
+      const notesMap = notesResult.data.reduce((acc, note) => {
+        if (note.id && note.note) {
+          acc[note.id] = note.note;
+        }
+        return acc;
+      }, {});
+      
+      const categoryGroupsMap = categoryGroupsResult.data.reduce((acc, group) => {
+        acc[group.id] = {
+          ...group,
+          is_income: Boolean(group.is_income),
+          hidden: Boolean(group.hidden)
+        };
+        return acc;
+      }, {});
+      
+      // Join categories with notes and groups
+      const categoriesWithNotesAndGroups = categoriesResult.data.map(category => ({
+        ...category,
+        note: notesMap[category.id] || null,
+        category_group: categoryGroupsMap[category.group] || null,
+        // Convert database integers to booleans for consistency
+        is_income: Boolean(category.is_income),
+        hidden: Boolean(category.hidden)
+      }));
+      
+      return categoriesWithNotesAndGroups;
+      
+    } catch (error) {
+      console.error('Failed to get categories with notes and groups:', error.message);
+      throw new Error(`Failed to retrieve categories with notes and groups: ${error.message}`);
+    }
+  }
+
   async shutdown() {
     if (this.initialized) {
       await api.shutdown();

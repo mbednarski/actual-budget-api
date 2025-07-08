@@ -51,6 +51,32 @@ const categoryWithNotesSchema = {
   }
 };
 
+const categoryWithNotesAndGroupSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: 'Unique category identifier' },
+    name: { type: 'string', description: 'Category name' },
+    is_income: { type: 'boolean', description: 'Whether this is an income category' },
+    hidden: { type: 'boolean', description: 'Whether the category is hidden' },
+    group: { type: 'string', description: 'Category group ID' },
+    sort_order: { type: 'number', description: 'Sort order within group' },
+    goal_def: { type: 'string', description: 'Goal definition' },
+    note: { type: 'string', nullable: true, description: 'Category note' },
+    category_group: {
+      type: 'object',
+      nullable: true,
+      description: 'Parent category group information',
+      properties: {
+        id: { type: 'string', description: 'Unique category group identifier' },
+        name: { type: 'string', description: 'Category group name' },
+        is_income: { type: 'boolean', description: 'Whether this is an income group' },
+        sort_order: { type: 'number', description: 'Sort order' },
+        hidden: { type: 'boolean', description: 'Whether the group is hidden' }
+      }
+    }
+  }
+};
+
 const successResponseSchema = {
   type: 'object',
   properties: {
@@ -96,6 +122,7 @@ module.exports = {
   categorySchema,
   categoryGroupSchema,
   categoryWithNotesSchema,
+  categoryWithNotesAndGroupSchema,
   successResponseSchema,
   errorResponseSchema,
   healthResponseSchema
