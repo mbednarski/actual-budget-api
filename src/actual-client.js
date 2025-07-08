@@ -1,4 +1,5 @@
 const api = require('@actual-app/api');
+const { q } = require('@actual-app/api');
 const { config } = require('./config');
 
 class ActualBudgetClient {
@@ -84,6 +85,81 @@ class ActualBudgetClient {
     } catch (error) {
       console.error('Failed to get category groups:', error.message);
       throw new Error(`Failed to retrieve category groups: ${error.message}`);
+    }
+  }
+
+  async getCategoriesWithNotes(options = {}) {
+    await this.ensureInitialized();
+    
+    const {
+      includeHidden = false,
+      incomeOnly = false,
+      expenseOnly = false
+    } = options;
+    
+    try {
+      // Build category query with filters
+      let categoryQuery = q('categories')
+        .select([
+          'id',
+          'name',
+          'is_income',
+          'hidden',
+          'group',
+          'sort_order',
+          'goal_def'
+        ])
+        .filter({ tombstone: false });
+      
+      // Apply optional filters
+      if (!includeHidden) {
+        categoryQuery = categoryQuery.filter({ hidden: false });
+      }
+      
+      if (incomeOnly) {
+        categoryQuery = categoryQuery.filter({ is_income: true });
+      } else if (expenseOnly) {
+        categoryQuery = categoryQuery.filter({ is_income: false });
+      }
+      
+      categoryQuery = categoryQuery.orderBy('sort_order');
+      
+      // Notes query
+      const notesQuery = q('notes').select(['id', 'note']);
+      
+      // Execute both queries in parallel
+      const [categoriesResult, notesResult] = await Promise.all([
+        api.aqlQuery(categoryQuery),
+        api.aqlQuery(notesQuery)
+      ]);
+      
+      // Validate results
+      if (!categoriesResult?.data || !notesResult?.data) {
+        throw new Error('Invalid query results received');
+      }
+      
+      // Create notes lookup map
+      const notesMap = notesResult.data.reduce((acc, note) => {
+        if (note.id && note.note) {
+          acc[note.id] = note.note;
+        }
+        return acc;
+      }, {});
+      
+      // Join categories with notes
+      const categoriesWithNotes = categoriesResult.data.map(category => ({
+        ...category,
+        note: notesMap[category.id] || null,
+        // Convert database integers to booleans for consistency
+        is_income: Boolean(category.is_income),
+        hidden: Boolean(category.hidden)
+      }));
+      
+      return categoriesWithNotes;
+      
+    } catch (error) {
+      console.error('Failed to get categories with notes:', error.message);
+      throw new Error(`Failed to retrieve categories with notes: ${error.message}`);
     }
   }
 
