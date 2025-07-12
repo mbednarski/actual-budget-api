@@ -6,6 +6,13 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:startup": "node scripts/test-startup.js",
+    "ci:check": "npm run lint && npm run format:check && npm run test:startup",
+    "prepare": "husky",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop actual-budget-wrapper",
     "pm2:restart": "pm2 restart actual-budget-wrapper",
@@ -13,13 +20,20 @@
   },
   "dependencies": {
     "@actual-app/api": "25.7.1",
-    "fastify": "^4.0.0",
-    "dotenv": "^16.0.0",
     "@fastify/swagger": "^8.0.0",
-    "@fastify/swagger-ui": "^1.0.0"
+    "@fastify/swagger-ui": "^1.0.0",
+    "dotenv": "^16.0.0",
+    "fastify": "^4.0.0"
   },
   "devDependencies": {
-    "pm2": "^5.0.0"
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-security": "^3.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "pm2": "^5.0.0",
+    "prettier": "^3.6.2"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -32,5 +46,14 @@
     "rest"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
 }

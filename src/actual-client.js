@@ -28,10 +28,10 @@ class ActualBudgetClient {
       });
 
       await api.downloadBudget(config.actual.budgetId);
-      
+
       this.initialized = true;
       this.connecting = false;
-      
+
       console.log('Successfully connected to Actual Budget server');
     } catch (error) {
       this.connecting = false;
@@ -54,7 +54,7 @@ class ActualBudgetClient {
 
   async getAccounts() {
     await this.ensureInitialized();
-    
+
     try {
       const accounts = await api.getAccounts();
       return accounts || [];
@@ -66,7 +66,7 @@ class ActualBudgetClient {
 
   async getCategories() {
     await this.ensureInitialized();
-    
+
     try {
       const categories = await api.getCategories();
       return categories || [];
@@ -78,7 +78,7 @@ class ActualBudgetClient {
 
   async getCategoryGroups() {
     await this.ensureInitialized();
-    
+
     try {
       const categoryGroups = await api.getCategoryGroups();
       return categoryGroups || [];
@@ -90,54 +90,42 @@ class ActualBudgetClient {
 
   async getCategoriesWithNotes(options = {}) {
     await this.ensureInitialized();
-    
-    const {
-      includeHidden = false,
-      incomeOnly = false,
-      expenseOnly = false
-    } = options;
-    
+
+    const { includeHidden = false, incomeOnly = false, expenseOnly = false } = options;
+
     try {
       // Build category query with filters
       let categoryQuery = q('categories')
-        .select([
-          'id',
-          'name',
-          'is_income',
-          'hidden',
-          'group',
-          'sort_order',
-          'goal_def'
-        ])
+        .select(['id', 'name', 'is_income', 'hidden', 'group', 'sort_order', 'goal_def'])
         .filter({ tombstone: false });
-      
+
       // Apply optional filters
       if (!includeHidden) {
         categoryQuery = categoryQuery.filter({ hidden: false });
       }
-      
+
       if (incomeOnly) {
         categoryQuery = categoryQuery.filter({ is_income: true });
       } else if (expenseOnly) {
         categoryQuery = categoryQuery.filter({ is_income: false });
       }
-      
+
       categoryQuery = categoryQuery.orderBy('sort_order');
-      
+
       // Notes query
       const notesQuery = q('notes').select(['id', 'note']);
-      
+
       // Execute both queries in parallel
       const [categoriesResult, notesResult] = await Promise.all([
         api.aqlQuery(categoryQuery),
         api.aqlQuery(notesQuery)
       ]);
-      
+
       // Validate results
       if (!categoriesResult?.data || !notesResult?.data) {
         throw new Error('Invalid query results received');
       }
-      
+
       // Create notes lookup map
       const notesMap = notesResult.data.reduce((acc, note) => {
         if (note.id && note.note) {
@@ -145,7 +133,7 @@ class ActualBudgetClient {
         }
         return acc;
       }, {});
-      
+
       // Join categories with notes
       const categoriesWithNotes = categoriesResult.data.map(category => ({
         ...category,
@@ -154,9 +142,8 @@ class ActualBudgetClient {
         is_income: Boolean(category.is_income),
         hidden: Boolean(category.hidden)
       }));
-      
+
       return categoriesWithNotes;
-      
     } catch (error) {
       console.error('Failed to get categories with notes:', error.message);
       throw new Error(`Failed to retrieve categories with notes: ${error.message}`);
@@ -165,66 +152,48 @@ class ActualBudgetClient {
 
   async getCategoriesWithNotesAndGroups(options = {}) {
     await this.ensureInitialized();
-    
-    const {
-      includeHidden = false,
-      incomeOnly = false,
-      expenseOnly = false
-    } = options;
-    
+
+    const { includeHidden = false, incomeOnly = false, expenseOnly = false } = options;
+
     try {
       // Build category query with filters
       let categoryQuery = q('categories')
-        .select([
-          'id',
-          'name',
-          'is_income',
-          'hidden',
-          'group',
-          'sort_order',
-          'goal_def'
-        ])
+        .select(['id', 'name', 'is_income', 'hidden', 'group', 'sort_order', 'goal_def'])
         .filter({ tombstone: false });
-      
+
       // Apply optional filters
       if (!includeHidden) {
         categoryQuery = categoryQuery.filter({ hidden: false });
       }
-      
+
       if (incomeOnly) {
         categoryQuery = categoryQuery.filter({ is_income: true });
       } else if (expenseOnly) {
         categoryQuery = categoryQuery.filter({ is_income: false });
       }
-      
+
       categoryQuery = categoryQuery.orderBy('sort_order');
-      
+
       // Notes query
       const notesQuery = q('notes').select(['id', 'note']);
-      
+
       // Category groups query
       const categoryGroupsQuery = q('category_groups')
-        .select([
-          'id',
-          'name',
-          'is_income',
-          'sort_order',
-          'hidden'
-        ])
+        .select(['id', 'name', 'is_income', 'sort_order', 'hidden'])
         .filter({ tombstone: false });
-      
+
       // Execute all queries in parallel
       const [categoriesResult, notesResult, categoryGroupsResult] = await Promise.all([
         api.aqlQuery(categoryQuery),
         api.aqlQuery(notesQuery),
         api.aqlQuery(categoryGroupsQuery)
       ]);
-      
+
       // Validate results
       if (!categoriesResult?.data || !notesResult?.data || !categoryGroupsResult?.data) {
         throw new Error('Invalid query results received');
       }
-      
+
       // Create lookup maps
       const notesMap = notesResult.data.reduce((acc, note) => {
         if (note.id && note.note) {
@@ -232,7 +201,7 @@ class ActualBudgetClient {
         }
         return acc;
       }, {});
-      
+
       const categoryGroupsMap = categoryGroupsResult.data.reduce((acc, group) => {
         acc[group.id] = {
           ...group,
@@ -241,7 +210,7 @@ class ActualBudgetClient {
         };
         return acc;
       }, {});
-      
+
       // Join categories with notes and groups
       const categoriesWithNotesAndGroups = categoriesResult.data.map(category => ({
         ...category,
@@ -251,9 +220,8 @@ class ActualBudgetClient {
         is_income: Boolean(category.is_income),
         hidden: Boolean(category.hidden)
       }));
-      
+
       return categoriesWithNotesAndGroups;
-      
     } catch (error) {
       console.error('Failed to get categories with notes and groups:', error.message);
       throw new Error(`Failed to retrieve categories with notes and groups: ${error.message}`);
@@ -270,27 +238,27 @@ class ActualBudgetClient {
 
   async getTransactions(accountId, startDate, endDate) {
     await this.ensureInitialized();
-    
+
     // Input validation
     if (!accountId) {
       throw new Error('Account ID is required');
     }
-    
+
     if (!startDate || !endDate) {
       throw new Error('Start date and end date are required');
     }
-    
+
     // Validate date format (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
       throw new Error('Dates must be in YYYY-MM-DD format');
     }
-    
+
     // Validate date range
     if (new Date(startDate) > new Date(endDate)) {
       throw new Error('Start date cannot be after end date');
     }
-    
+
     try {
       const transactions = await api.getTransactions(accountId, startDate, endDate);
       return transactions || [];
@@ -302,35 +270,43 @@ class ActualBudgetClient {
 
   async addTransaction(transactionData) {
     await this.ensureInitialized();
-    
+
     // Validate required fields
-    const { account_id, date, amount, payee_name, category_id, notes = '', subtransactions } = transactionData;
-    
+    const {
+      account_id,
+      date,
+      amount,
+      payee_name,
+      category_id,
+      notes = '',
+      subtransactions
+    } = transactionData;
+
     if (!account_id) {
       throw new Error('Account ID is required');
     }
-    
+
     if (!date || !amount || !payee_name || !category_id) {
       throw new Error('Date, amount, payee_name, and category_id are required');
     }
-    
+
     // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(date)) {
       throw new Error('Date must be in YYYY-MM-DD format');
     }
-    
+
     // Validate amount is integer
     if (!Number.isInteger(amount)) {
       throw new Error('Amount must be an integer (in cents)');
     }
-    
+
     // Validate subtransactions if provided
     if (subtransactions && Array.isArray(subtransactions)) {
       if (subtransactions.length === 0) {
         throw new Error('If subtransactions are provided, the array cannot be empty');
       }
-      
+
       // Validate each subtransaction
       for (const subtx of subtransactions) {
         if (!Number.isInteger(subtx.amount)) {
@@ -340,14 +316,16 @@ class ActualBudgetClient {
           throw new Error('Subtransaction category_id is required');
         }
       }
-      
+
       // Validate that subtransaction amounts sum to main transaction amount
       const subtotalAmount = subtransactions.reduce((sum, subtx) => sum + subtx.amount, 0);
       if (subtotalAmount !== amount) {
-        throw new Error(`Subtransaction amounts (${subtotalAmount}) must sum to transaction amount (${amount})`);
+        throw new Error(
+          `Subtransaction amounts (${subtotalAmount}) must sum to transaction amount (${amount})`
+        );
       }
     }
-    
+
     try {
       // Translate to Actual Budget API format
       const transaction = {
@@ -357,7 +335,7 @@ class ActualBudgetClient {
         category: category_id,
         notes: notes || ''
       };
-      
+
       // Add subtransactions if provided
       if (subtransactions && subtransactions.length > 0) {
         transaction.subtransactions = subtransactions.map(subtx => ({
@@ -366,12 +344,11 @@ class ActualBudgetClient {
           notes: subtx.notes || ''
         }));
       }
-      
+
       // Import the transaction using Actual Budget API
       const result = await api.importTransactions(account_id, [transaction]);
-      
+
       return result;
-      
     } catch (error) {
       console.error('Failed to add transaction:', error.message);
       throw new Error(`Failed to add transaction: ${error.message}`);

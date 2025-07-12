@@ -5,12 +5,13 @@ const actualClient = require('./actual-client');
 async function startServer() {
   try {
     validateConfig();
-    
+
     await fastify.register(require('@fastify/swagger'), {
       swagger: {
         info: {
           title: 'Actual Budget API Wrapper',
-          description: 'HTTP wrapper for Actual Budget API - exposes accounts, categories, and category groups',
+          description:
+            'HTTP wrapper for Actual Budget API - exposes accounts, categories, and category groups',
           version: '1.0.0'
         },
         host: `${config.server.host}:${config.server.port}`,
@@ -31,66 +32,74 @@ async function startServer() {
         deepLinking: false
       },
       uiHooks: {
-        onRequest: function (request, reply, next) { next(); },
-        preHandler: function (request, reply, next) { next(); }
+        onRequest: function (request, reply, next) {
+          next();
+        },
+        preHandler: function (request, reply, next) {
+          next();
+        }
       },
       staticCSP: true,
-      transformStaticCSP: (header) => header
+      transformStaticCSP: header => header
     });
-    
+
     await fastify.register(require('./routes/api'), { prefix: '/api' });
-    
-    fastify.get('/health', {
-      schema: {
-        description: 'Health check endpoint',
-        tags: ['Health'],
-        response: {
-          200: {
-            description: 'Service is healthy',
-            type: 'object',
-            properties: {
-              status: { type: 'string', enum: ['healthy'] },
-              timestamp: { type: 'string', format: 'date-time' },
-              services: {
-                type: 'object',
-                properties: {
-                  actual_budget: { type: 'string', enum: ['connected', 'disconnected'] },
-                  http_server: { type: 'string', enum: ['running'] }
+
+    fastify.get(
+      '/health',
+      {
+        schema: {
+          description: 'Health check endpoint',
+          tags: ['Health'],
+          response: {
+            200: {
+              description: 'Service is healthy',
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['healthy'] },
+                timestamp: { type: 'string', format: 'date-time' },
+                services: {
+                  type: 'object',
+                  properties: {
+                    actual_budget: { type: 'string', enum: ['connected', 'disconnected'] },
+                    http_server: { type: 'string', enum: ['running'] }
+                  }
                 }
               }
-            }
-          },
-          503: {
-            description: 'Service is unhealthy',
-            type: 'object',
-            properties: {
-              status: { type: 'string', enum: ['unhealthy'] },
-              timestamp: { type: 'string', format: 'date-time' },
-              error: { type: 'string' }
+            },
+            503: {
+              description: 'Service is unhealthy',
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['unhealthy'] },
+                timestamp: { type: 'string', format: 'date-time' },
+                error: { type: 'string' }
+              }
             }
           }
         }
+      },
+      async (request, reply) => {
+        try {
+          const connectionStatus = await actualClient.getConnectionStatus();
+          return {
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            services: {
+              actual_budget: connectionStatus.initialized ? 'connected' : 'disconnected',
+              http_server: 'running'
+            }
+          };
+        } catch (error) {
+          reply.code(503);
+          return {
+            status: 'unhealthy',
+            timestamp: new Date().toISOString(),
+            error: error.message
+          };
+        }
       }
-    }, async (request, reply) => {
-      try {
-        const connectionStatus = await actualClient.getConnectionStatus();
-        return {
-          status: 'healthy',
-          timestamp: new Date().toISOString(),
-          services: {
-            actual_budget: connectionStatus.initialized ? 'connected' : 'disconnected',
-            http_server: 'running'
-          }
-        };
-      } catch (error) {
-        reply.code(503);
-        return {
-          status: 'unhealthy',
-          timestamp: new Date().toISOString(),
-          error: error.message
-        };
-      }
-    });
+    );
 
     fastify.setNotFoundHandler((request, reply) => {
       reply.code(404).send({
@@ -113,9 +122,9 @@ async function startServer() {
       });
     });
 
-    const gracefulShutdown = async (signal) => {
+    const gracefulShutdown = async signal => {
       console.log(`Received ${signal}. Shutting down gracefully...`);
-      
+
       try {
         await actualClient.shutdown();
         await fastify.close();
@@ -130,13 +139,12 @@ async function startServer() {
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-    await fastify.listen({ 
-      host: config.server.host, 
-      port: config.server.port 
+    await fastify.listen({
+      host: config.server.host,
+      port: config.server.port
     });
 
     console.log(`Server listening on ${config.server.host}:${config.server.port}`);
-    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
