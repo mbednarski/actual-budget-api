@@ -148,6 +148,99 @@ const healthResponseSchema = {
   }
 };
 
+const addTransactionRequestSchema = {
+  type: 'object',
+  properties: {
+    account_id: { 
+      type: 'string', 
+      minLength: 1,
+      description: 'Account ID where the transaction will be added'
+    },
+    date: { 
+      type: 'string', 
+      format: 'date',
+      pattern: '^\\d{4}-\\d{2}-\\d{2}$',
+      description: 'Transaction date in YYYY-MM-DD format'
+    },
+    amount: { 
+      type: 'integer',
+      description: 'Transaction amount in cents (e.g., $120.30 = 12030)'
+    },
+    payee_name: { 
+      type: 'string',
+      minLength: 1,
+      maxLength: 255,
+      description: 'Payee name'
+    },
+    category_id: { 
+      type: 'string',
+      minLength: 1,
+      description: 'Category ID for the transaction'
+    },
+    notes: { 
+      type: 'string',
+      maxLength: 1000,
+      description: 'Optional transaction notes'
+    },
+    subtransactions: {
+      type: 'array',
+      description: 'Optional subtransactions for split transactions',
+      minItems: 1,
+      maxItems: 50,
+      items: {
+        type: 'object',
+        properties: {
+          amount: { 
+            type: 'integer',
+            description: 'Subtransaction amount in cents'
+          },
+          category_id: { 
+            type: 'string',
+            minLength: 1,
+            description: 'Subtransaction category ID'
+          },
+          notes: { 
+            type: 'string',
+            maxLength: 1000,
+            description: 'Optional subtransaction notes'
+          }
+        },
+        required: ['amount', 'category_id'],
+        additionalProperties: false
+      }
+    }
+  },
+  required: ['account_id', 'date', 'amount', 'payee_name', 'category_id'],
+  additionalProperties: false
+};
+
+const addTransactionResponseSchema = {
+  type: 'object',
+  properties: {
+    success: { type: 'boolean', example: true },
+    data: {
+      type: 'object',
+      properties: {
+        added: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'IDs of newly added transactions'
+        },
+        updated: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'IDs of updated transactions'
+        },
+        errors: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Any errors that occurred during import'
+        }
+      }
+    }
+  }
+};
+
 module.exports = {
   accountSchema,
   categorySchema,
@@ -157,5 +250,7 @@ module.exports = {
   transactionSchema,
   successResponseSchema,
   errorResponseSchema,
-  healthResponseSchema
+  healthResponseSchema,
+  addTransactionRequestSchema,
+  addTransactionResponseSchema
 };

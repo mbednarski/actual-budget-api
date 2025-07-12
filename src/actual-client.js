@@ -300,6 +300,84 @@ class ActualBudgetClient {
     }
   }
 
+  async addTransaction(transactionData) {
+    await this.ensureInitialized();
+    
+    // Validate required fields
+    const { account_id, date, amount, payee_name, category_id, notes = '', subtransactions } = transactionData;
+    
+    if (!account_id) {
+      throw new Error('Account ID is required');
+    }
+    
+    if (!date || !amount || !payee_name || !category_id) {
+      throw new Error('Date, amount, payee_name, and category_id are required');
+    }
+    
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      throw new Error('Date must be in YYYY-MM-DD format');
+    }
+    
+    // Validate amount is integer
+    if (!Number.isInteger(amount)) {
+      throw new Error('Amount must be an integer (in cents)');
+    }
+    
+    // Validate subtransactions if provided
+    if (subtransactions && Array.isArray(subtransactions)) {
+      if (subtransactions.length === 0) {
+        throw new Error('If subtransactions are provided, the array cannot be empty');
+      }
+      
+      // Validate each subtransaction
+      for (const subtx of subtransactions) {
+        if (!Number.isInteger(subtx.amount)) {
+          throw new Error('Subtransaction amounts must be integers (in cents)');
+        }
+        if (!subtx.category_id) {
+          throw new Error('Subtransaction category_id is required');
+        }
+      }
+      
+      // Validate that subtransaction amounts sum to main transaction amount
+      const subtotalAmount = subtransactions.reduce((sum, subtx) => sum + subtx.amount, 0);
+      if (subtotalAmount !== amount) {
+        throw new Error(`Subtransaction amounts (${subtotalAmount}) must sum to transaction amount (${amount})`);
+      }
+    }
+    
+    try {
+      // Translate to Actual Budget API format
+      const transaction = {
+        date,
+        amount,
+        payee_name,
+        category: category_id,
+        notes: notes || ''
+      };
+      
+      // Add subtransactions if provided
+      if (subtransactions && subtransactions.length > 0) {
+        transaction.subtransactions = subtransactions.map(subtx => ({
+          amount: subtx.amount,
+          category: subtx.category_id,
+          notes: subtx.notes || ''
+        }));
+      }
+      
+      // Import the transaction using Actual Budget API
+      const result = await api.importTransactions(account_id, [transaction]);
+      
+      return result;
+      
+    } catch (error) {
+      console.error('Failed to add transaction:', error.message);
+      throw new Error(`Failed to add transaction: ${error.message}`);
+    }
+  }
+
   async getConnectionStatus() {
     return {
       initialized: this.initialized,
