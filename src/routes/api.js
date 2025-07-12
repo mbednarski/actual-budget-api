@@ -1,5 +1,5 @@
 const actualClient = require('../actual-client');
-const { accountSchema, categorySchema, categoryGroupSchema, categoryWithNotesSchema, categoryWithNotesAndGroupSchema, transactionSchema } = require('../schemas');
+const { accountSchema, categorySchema, categoryGroupSchema, categoryWithNotesSchema, categoryWithNotesAndGroupSchema, transactionSchema, addTransactionRequestSchema, addTransactionResponseSchema } = require('../schemas');
 
 async function apiRoutes(fastify) {
   fastify.get('/accounts', {
@@ -414,6 +414,84 @@ async function apiRoutes(fastify) {
           success: false,
           error: {
             code: 'INVALID_PARAMETERS',
+            message: error.message
+          }
+        };
+      }
+      
+      // Handle other errors as 500 Internal Server Error
+      reply.code(500);
+      return {
+        success: false,
+        error: {
+          code: 'ACTUAL_CONNECTION_ERROR',
+          message: error.message
+        }
+      };
+    }
+  });
+
+  fastify.post('/transaction', {
+    schema: {
+      description: 'Add a new transaction to Actual Budget',
+      tags: ['API'],
+      body: addTransactionRequestSchema,
+      response: {
+        200: {
+          description: 'Transaction successfully added',
+          ...addTransactionResponseSchema
+        },
+        400: {
+          description: 'Bad request - validation error',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: {
+              type: 'object',
+              properties: {
+                code: { type: 'string', example: 'VALIDATION_ERROR' },
+                message: { type: 'string', example: 'Subtransaction amounts must sum to transaction amount' }
+              }
+            }
+          }
+        },
+        500: {
+          description: 'Internal server error',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: {
+              type: 'object',
+              properties: {
+                code: { type: 'string', example: 'ACTUAL_CONNECTION_ERROR' },
+                message: { type: 'string', example: 'Failed to connect to Actual Budget server' }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const result = await actualClient.addTransaction(request.body);
+      
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      // Handle validation errors as 400 Bad Request
+      if (error.message.includes('required') || 
+          error.message.includes('format') || 
+          error.message.includes('must be') ||
+          error.message.includes('sum to') ||
+          error.message.includes('integer') ||
+          error.message.includes('cannot be empty')) {
+        reply.code(400);
+        return {
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
             message: error.message
           }
         };
