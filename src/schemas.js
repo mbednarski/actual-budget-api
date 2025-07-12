@@ -3,10 +3,10 @@ const accountSchema = {
   properties: {
     id: { type: 'string', description: 'Unique account identifier' },
     name: { type: 'string', description: 'Account name' },
-    type: { 
-      type: 'string', 
+    type: {
+      type: 'string',
       enum: ['checking', 'savings', 'credit', 'investment', 'mortgage', 'debt', 'other'],
-      description: 'Account type' 
+      description: 'Account type'
     },
     balance: { type: 'number', description: 'Current account balance' },
     closed: { type: 'boolean', description: 'Whether the account is closed' },
@@ -111,11 +111,19 @@ const transactionSchema = {
     amount: { type: 'integer', description: 'Amount in cents (e.g., $12.00 = 1200)' },
     payee: { type: 'string', nullable: true, description: 'Payee ID' },
     payee_name: { type: 'string', nullable: true, description: 'Payee name' },
-    imported_payee: { type: 'string', nullable: true, description: 'Raw payee description from import' },
+    imported_payee: {
+      type: 'string',
+      nullable: true,
+      description: 'Raw payee description from import'
+    },
     category: { type: 'string', nullable: true, description: 'Category ID' },
     notes: { type: 'string', nullable: true, description: 'Transaction notes' },
     imported_id: { type: 'string', nullable: true, description: 'Unique identifier from bank' },
-    transfer_id: { type: 'string', nullable: true, description: 'ID for corresponding transfer transaction' },
+    transfer_id: {
+      type: 'string',
+      nullable: true,
+      description: 'ID for corresponding transfer transaction'
+    },
     cleared: { type: 'boolean', nullable: true, description: 'Whether transaction is cleared' },
     subtransactions: {
       type: 'array',
@@ -151,33 +159,33 @@ const healthResponseSchema = {
 const addTransactionRequestSchema = {
   type: 'object',
   properties: {
-    account_id: { 
-      type: 'string', 
+    account_id: {
+      type: 'string',
       minLength: 1,
       description: 'Account ID where the transaction will be added'
     },
-    date: { 
-      type: 'string', 
+    date: {
+      type: 'string',
       format: 'date',
       pattern: '^\\d{4}-\\d{2}-\\d{2}$',
       description: 'Transaction date in YYYY-MM-DD format'
     },
-    amount: { 
+    amount: {
       type: 'integer',
       description: 'Transaction amount in cents (e.g., $120.30 = 12030)'
     },
-    payee_name: { 
+    payee_name: {
       type: 'string',
       minLength: 1,
       maxLength: 255,
       description: 'Payee name'
     },
-    category_id: { 
+    category_id: {
       type: 'string',
       minLength: 1,
       description: 'Category ID for the transaction'
     },
-    notes: { 
+    notes: {
       type: 'string',
       maxLength: 1000,
       description: 'Optional transaction notes'
@@ -190,16 +198,16 @@ const addTransactionRequestSchema = {
       items: {
         type: 'object',
         properties: {
-          amount: { 
+          amount: {
             type: 'integer',
             description: 'Subtransaction amount in cents'
           },
-          category_id: { 
+          category_id: {
             type: 'string',
             minLength: 1,
             description: 'Subtransaction category ID'
           },
-          notes: { 
+          notes: {
             type: 'string',
             maxLength: 1000,
             description: 'Optional subtransaction notes'

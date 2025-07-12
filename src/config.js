@@ -15,8 +15,12 @@ const config = {
 
 function validateConfig() {
   const required = ['ACTUAL_PASSWORD', 'ACTUAL_BUDGET_ID'];
-  const missing = required.filter(key => !process.env[key]);
-  
+  const missing = required.filter(key => {
+    // eslint-disable-next-line security/detect-object-injection
+    const envValue = process.env[key];
+    return !envValue;
+  });
+
   if (missing.length > 0) {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }

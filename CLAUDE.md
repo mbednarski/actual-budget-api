@@ -5,9 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Actual Budget API HTTP Wrapper
 
 ## Project Overview
+
 HTTP wrapper for Actual Budget API that exposes account, category, and category group data via REST endpoints on localhost.
 
 ## Tech Stack
+
 - **Runtime**: Node.js
 - **HTTP Framework**: Fastify
 - **Process Manager**: PM2
@@ -15,8 +17,9 @@ HTTP wrapper for Actual Budget API that exposes account, category, and category 
 - **Documentation**: OpenAPI/Swagger (auto-generated)
 
 ## API Endpoints
+
 - `GET /api/accounts` - Get all accounts
-- `GET /api/categories` - Get all categories  
+- `GET /api/categories` - Get all categories
 - `GET /api/category-groups` - Get all category groups
 - `GET /api/categories-with-notes` - Get categories with their notes
 - `GET /api/categories-with-notes-and-groups` - Get categories with notes and parent group info
@@ -25,6 +28,7 @@ HTTP wrapper for Actual Budget API that exposes account, category, and category 
 - `GET /docs/json` - Raw OpenAPI JSON specification
 
 ## Development Commands
+
 ```bash
 # Install dependencies
 npm install
@@ -43,7 +47,9 @@ npm run pm2:logs      # or pm2 logs actual-budget-wrapper
 ```
 
 ## Configuration
+
 Environment variables (create `.env` file):
+
 - `ACTUAL_SERVER_URL` - Actual Budget server URL (default: http://localhost:5006)
 - `ACTUAL_PASSWORD` - Server password (required)
 - `ACTUAL_BUDGET_ID` - Budget sync ID (required)
@@ -54,6 +60,7 @@ Environment variables (create `.env` file):
 ## Architecture Overview
 
 ### Core Components
+
 1. **ActualBudgetClient** (`src/actual-client.js`): Singleton wrapper around @actual-app/api
    - Handles connection initialization and state management
    - Implements lazy initialization with connection pooling
@@ -76,12 +83,14 @@ Environment variables (create `.env` file):
    - Supports complex nested objects (categories with groups)
 
 ### Data Flow
+
 1. Client request → Fastify routes → ActualBudgetClient → @actual-app/api → Actual Budget server
 2. ActualBudgetClient uses AQL (Actual Query Language) for complex queries
 3. Client-side joins performed for categories-with-notes endpoints using lookup maps
 4. Responses normalized (booleans, consistent field names)
 
 ### Query Architecture
+
 - Simple endpoints (accounts, categories, category-groups) use direct API calls
 - Complex endpoints (categories-with-notes) use parallel AQL queries with client-side joins:
   - Categories query with filters
@@ -90,6 +99,7 @@ Environment variables (create `.env` file):
   - Efficient lookup maps for O(1) joins
 
 ## Testing
+
 ```bash
 # Test endpoints
 curl http://localhost:3000/api/accounts
@@ -104,6 +114,7 @@ open http://localhost:3000/docs
 ```
 
 ## Documentation Strategy
+
 **IMPORTANT**: This project implements OpenAPI/Swagger for automatic documentation generation. All endpoints MUST have OpenAPI schemas defined in their route handlers. This ensures:
 
 1. **Always up-to-date documentation** - Changes to endpoints require schema updates
@@ -112,6 +123,7 @@ open http://localhost:3000/docs
 4. **Auto-generated specs** - OpenAPI JSON available at `/docs/json`
 
 When adding new endpoints:
+
 - Define schemas in `src/schemas.js`
 - Add OpenAPI schema to route handler in `src/routes/api.js`
 - Include proper descriptions, tags, and response codes
