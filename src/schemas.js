@@ -102,6 +102,37 @@ const errorResponseSchema = {
   required: ['success', 'error']
 };
 
+const transactionSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: 'Unique transaction identifier' },
+    account: { type: 'string', description: 'Account ID' },
+    date: { type: 'string', format: 'date', description: 'Transaction date (YYYY-MM-DD)' },
+    amount: { type: 'integer', description: 'Amount in cents (e.g., $12.00 = 1200)' },
+    payee: { type: 'string', nullable: true, description: 'Payee ID' },
+    payee_name: { type: 'string', nullable: true, description: 'Payee name' },
+    imported_payee: { type: 'string', nullable: true, description: 'Raw payee description from import' },
+    category: { type: 'string', nullable: true, description: 'Category ID' },
+    notes: { type: 'string', nullable: true, description: 'Transaction notes' },
+    imported_id: { type: 'string', nullable: true, description: 'Unique identifier from bank' },
+    transfer_id: { type: 'string', nullable: true, description: 'ID for corresponding transfer transaction' },
+    cleared: { type: 'boolean', nullable: true, description: 'Whether transaction is cleared' },
+    subtransactions: {
+      type: 'array',
+      nullable: true,
+      description: 'Sub-transactions for split transactions',
+      items: {
+        type: 'object',
+        properties: {
+          amount: { type: 'integer', description: 'Sub-transaction amount in cents' },
+          category: { type: 'string', nullable: true, description: 'Sub-transaction category ID' },
+          notes: { type: 'string', nullable: true, description: 'Sub-transaction notes' }
+        }
+      }
+    }
+  }
+};
+
 const healthResponseSchema = {
   type: 'object',
   properties: {
@@ -123,6 +154,7 @@ module.exports = {
   categoryGroupSchema,
   categoryWithNotesSchema,
   categoryWithNotesAndGroupSchema,
+  transactionSchema,
   successResponseSchema,
   errorResponseSchema,
   healthResponseSchema

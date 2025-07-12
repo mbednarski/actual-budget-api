@@ -268,6 +268,38 @@ class ActualBudgetClient {
     }
   }
 
+  async getTransactions(accountId, startDate, endDate) {
+    await this.ensureInitialized();
+    
+    // Input validation
+    if (!accountId) {
+      throw new Error('Account ID is required');
+    }
+    
+    if (!startDate || !endDate) {
+      throw new Error('Start date and end date are required');
+    }
+    
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+      throw new Error('Dates must be in YYYY-MM-DD format');
+    }
+    
+    // Validate date range
+    if (new Date(startDate) > new Date(endDate)) {
+      throw new Error('Start date cannot be after end date');
+    }
+    
+    try {
+      const transactions = await api.getTransactions(accountId, startDate, endDate);
+      return transactions || [];
+    } catch (error) {
+      console.error('Failed to get transactions:', error.message);
+      throw new Error(`Failed to retrieve transactions: ${error.message}`);
+    }
+  }
+
   async getConnectionStatus() {
     return {
       initialized: this.initialized,
