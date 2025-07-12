@@ -1,5 +1,5 @@
 const actualClient = require('../actual-client');
-const { accountSchema, categorySchema, categoryGroupSchema, categoryWithNotesSchema, categoryWithNotesAndGroupSchema } = require('../schemas');
+const { accountSchema, categorySchema, categoryGroupSchema, categoryWithNotesSchema, categoryWithNotesAndGroupSchema, transactionSchema } = require('../schemas');
 
 async function apiRoutes(fastify) {
   fastify.get('/accounts', {
@@ -298,6 +298,128 @@ async function apiRoutes(fastify) {
         data: categoriesWithNotesAndGroups
       };
     } catch (error) {
+      reply.code(500);
+      return {
+        success: false,
+        error: {
+          code: 'ACTUAL_CONNECTION_ERROR',
+          message: error.message
+        }
+      };
+    }
+  });
+
+  fastify.get('/transactions', {
+    schema: {
+      description: 'Get transactions from Actual Budget for a specific account and date range',
+      tags: ['API'],
+      querystring: {
+        type: 'object',
+        properties: {
+          accountId: { 
+            type: 'string', 
+            description: 'Account ID to retrieve transactions from',
+            minLength: 1
+          },
+          startDate: { 
+            type: 'string', 
+            format: 'date',
+            description: 'Start date for transaction retrieval (YYYY-MM-DD)',
+            pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+          },
+          endDate: { 
+            type: 'string', 
+            format: 'date',
+            description: 'End date for transaction retrieval (YYYY-MM-DD)',
+            pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+          }
+        },
+        required: ['accountId', 'startDate', 'endDate']
+      },
+      response: {
+        200: {
+          description: 'Successfully retrieved transactions',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            data: {
+              type: 'array',
+              items: transactionSchema
+            }
+          }
+        },
+        400: {
+          description: 'Bad request - invalid parameters',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: {
+              type: 'object',
+              properties: {
+                code: { type: 'string', example: 'INVALID_PARAMETERS' },
+                message: { type: 'string', example: 'Account ID is required' }
+              }
+            }
+          }
+        },
+        500: {
+          description: 'Internal server error',
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: {
+              type: 'object',
+              properties: {
+                code: { type: 'string', example: 'ACTUAL_CONNECTION_ERROR' },
+                message: { type: 'string', example: 'Failed to connect to Actual Budget server' }
+              }
+            }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    try {
+      const { accountId, startDate, endDate } = request.query;
+      
+      // Enhanced parameter validation with specific error messages
+      const missingParams = [];
+      if (!accountId) missingParams.push('accountId');
+      if (!startDate) missingParams.push('startDate');
+      if (!endDate) missingParams.push('endDate');
+      
+      if (missingParams.length > 0) {
+        reply.code(400);
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_REQUIRED_PARAMETERS',
+            message: `Missing required parameters: ${missingParams.join(', ')}. Expected format: ?accountId=<id>&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`
+          }
+        };
+      }
+      
+      const transactions = await actualClient.getTransactions(accountId, startDate, endDate);
+      return {
+        success: true,
+        data: transactions
+      };
+    } catch (error) {
+      // Handle validation errors as 400 Bad Request
+      if (error.message.includes('required') || 
+          error.message.includes('format') || 
+          error.message.includes('after end date')) {
+        reply.code(400);
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_PARAMETERS',
+            message: error.message
+          }
+        };
+      }
+      
+      // Handle other errors as 500 Internal Server Error
       reply.code(500);
       return {
         success: false,
