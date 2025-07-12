@@ -15,14 +15,10 @@ HTTP wrapper for Actual Budget API that exposes account, category, and category 
 - **Documentation**: OpenAPI/Swagger (auto-generated)
 
 ## API Endpoints
-- `GET /api/accounts` - Get all accounts
-- `GET /api/categories` - Get all categories  
-- `GET /api/category-groups` - Get all category groups
-- `GET /api/categories-with-notes` - Get categories with their notes
-- `GET /api/categories-with-notes-and-groups` - Get categories with notes and parent group info
-- `GET /health` - Health check endpoint
-- `GET /docs` - Interactive Swagger UI documentation
-- `GET /docs/json` - Raw OpenAPI JSON specification
+All available endpoints are documented in the auto-generated OpenAPI specification:
+- **Interactive documentation**: `GET /docs` - Swagger UI with live testing
+- **Raw specification**: `GET /docs/json` - OpenAPI JSON schema
+- **Health check**: `GET /health` - Service status
 
 ## Development Commands
 ```bash
@@ -90,17 +86,21 @@ Environment variables (create `.env` file):
   - Efficient lookup maps for O(1) joins
 
 ## Testing
+**Testing Protocol**: 
+- **User responsibility**: Run `npm run dev` to start development server on port 3002
+- **Claude responsibility**: Run curl commands to test endpoints
+
 ```bash
-# Test endpoints
-curl http://localhost:3000/api/accounts
-curl http://localhost:3000/api/categories
-curl http://localhost:3000/api/category-groups
-curl http://localhost:3000/api/categories-with-notes
-curl http://localhost:3000/api/categories-with-notes-and-groups
-curl http://localhost:3000/health
+# Test endpoints (development server on port 3002)
+curl http://localhost:3002/api/accounts
+curl http://localhost:3002/api/categories
+curl http://localhost:3002/api/category-groups
+curl http://localhost:3002/api/categories-with-notes
+curl http://localhost:3002/api/categories-with-notes-and-groups
+curl http://localhost:3002/health
 
 # View interactive documentation
-open http://localhost:3000/docs
+open http://localhost:3002/docs
 ```
 
 ## Documentation Strategy
