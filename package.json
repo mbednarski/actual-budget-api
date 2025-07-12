@@ -45,7 +45,7 @@
     "http",
     "rest"
   ],
-  "author": "",
+  "author": "mbednarski and Claude",
   "license": "MIT",
   "lint-staged": {
     "*.js": [

@@ -72,7 +72,7 @@ jobs:
         run: npx depcheck --ignores="husky,lint-staged,pm2"
 
       - name: Check package vulnerabilities
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=high
 
       - name: Validate package.json
         run: npx package-json-validator package.json
