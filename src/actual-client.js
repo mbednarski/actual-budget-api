@@ -355,7 +355,8 @@ class ActualBudgetClient {
         amount,
         payee_name,
         category: category_id,
-        notes: notes || ''
+        notes: notes || '',
+        cleared: false
       };
       
       // Add subtransactions if provided
