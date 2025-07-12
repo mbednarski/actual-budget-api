@@ -2,6 +2,7 @@ Please analyze and fix the GitHub issue: $ARGUMENTS.
 
 Follow these steps:
 
+1. Track progress in PROGRESS.md If it already exist, ask user what to do.
 1. Ensure you are in branch `master` and pull it.
 2. Use gh issue view to get the issue details
 2. Create and checkout dedicated feature branch. Make sure it is attached to the issue
