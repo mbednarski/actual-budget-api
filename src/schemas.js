@@ -151,67 +151,66 @@ const healthResponseSchema = {
 const addTransactionRequestSchema = {
   type: 'object',
   properties: {
-    account: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'Account ID' },
-        uuid: { type: 'string', description: 'Account UUID' }
-      },
-      required: ['id'],
-      description: 'Account information'
+    account_id: { 
+      type: 'string', 
+      minLength: 1,
+      description: 'Account ID where the transaction will be added'
     },
     date: { 
       type: 'string', 
       format: 'date',
       pattern: '^\\d{4}-\\d{2}-\\d{2}$',
-      description: 'Transaction date in YYYY-MM-DD format' 
+      description: 'Transaction date in YYYY-MM-DD format'
     },
     amount: { 
-      type: 'integer', 
-      description: 'Transaction amount in cents (e.g., $120.30 = 12030)' 
+      type: 'integer',
+      description: 'Transaction amount in cents (e.g., $120.30 = 12030)'
     },
     payee_name: { 
-      type: 'string', 
-      description: 'Payee name' 
+      type: 'string',
+      minLength: 1,
+      maxLength: 255,
+      description: 'Payee name'
     },
-    category: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', description: 'Category ID' }
-      },
-      required: ['id'],
-      description: 'Category information'
+    category_id: { 
+      type: 'string',
+      minLength: 1,
+      description: 'Category ID for the transaction'
     },
     notes: { 
-      type: 'string', 
-      description: 'Transaction notes',
-      default: ''
+      type: 'string',
+      maxLength: 1000,
+      description: 'Optional transaction notes'
     },
     subtransactions: {
       type: 'array',
       description: 'Optional subtransactions for split transactions',
+      minItems: 1,
+      maxItems: 50,
       items: {
         type: 'object',
         properties: {
           amount: { 
-            type: 'integer', 
-            description: 'Subtransaction amount in cents' 
+            type: 'integer',
+            description: 'Subtransaction amount in cents'
           },
           category_id: { 
-            type: 'string', 
-            description: 'Subtransaction category ID' 
+            type: 'string',
+            minLength: 1,
+            description: 'Subtransaction category ID'
           },
           notes: { 
-            type: 'string', 
-            description: 'Subtransaction notes',
-            default: ''
+            type: 'string',
+            maxLength: 1000,
+            description: 'Optional subtransaction notes'
           }
         },
-        required: ['amount', 'category_id']
+        required: ['amount', 'category_id'],
+        additionalProperties: false
       }
     }
   },
-  required: ['account', 'date', 'amount', 'payee_name', 'category'],
+  required: ['account_id', 'date', 'amount', 'payee_name', 'category_id'],
   additionalProperties: false
 };
 

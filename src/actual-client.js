@@ -304,14 +304,14 @@ class ActualBudgetClient {
     await this.ensureInitialized();
     
     // Validate required fields
-    const { account, date, amount, payee_name, category, notes = '', subtransactions } = transactionData;
+    const { account_id, date, amount, payee_name, category_id, notes = '', subtransactions } = transactionData;
     
-    if (!account?.id) {
+    if (!account_id) {
       throw new Error('Account ID is required');
     }
     
-    if (!date || !amount || !payee_name || !category?.id) {
-      throw new Error('Date, amount, payee_name, and category.id are required');
+    if (!date || !amount || !payee_name || !category_id) {
+      throw new Error('Date, amount, payee_name, and category_id are required');
     }
     
     // Validate date format
@@ -354,7 +354,7 @@ class ActualBudgetClient {
         date,
         amount,
         payee_name,
-        category: category.id,
+        category: category_id,
         notes: notes || ''
       };
       
@@ -368,7 +368,7 @@ class ActualBudgetClient {
       }
       
       // Import the transaction using Actual Budget API
-      const result = await api.importTransactions(account.id, [transaction]);
+      const result = await api.importTransactions(account_id, [transaction]);
       
       return result;
       
